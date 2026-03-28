@@ -2,7 +2,7 @@
  * SignBridge — Transcript Manager
  * Smoothing, debouncing, display, and text-to-speech
  */
-
+import { speakWord as elevenLabsSpeak, speakFull } from './elevenlabs.js';
 // DOM references (set during init)
 let els = {};
 
@@ -203,11 +203,8 @@ function highlightRefLetter(letter) {
 // ============================================
 
 function speakWord(word) {
-  if (!word || !window.speechSynthesis) return;
-  const utt = new SpeechSynthesisUtterance(word);
-  utt.rate = 0.9;
-  utt.pitch = 1;
-  speechSynthesis.speak(utt);
+  if (!word) return;
+  elevenLabsSpeak(word);
 }
 
 /**
@@ -215,10 +212,8 @@ function speakWord(word) {
  */
 export function speakFullTranscript() {
   const text = (fullText + currentWord).trim();
-  if (!text || !window.speechSynthesis) return;
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.rate = 0.85;
-  speechSynthesis.speak(utt);
+  if (!text) return;
+  speakFull(text);
 }
 
 /**
