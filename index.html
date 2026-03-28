@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SignBridge — ASL to English, Live</title>
+    <meta name="description" content="Real-time American Sign Language fingerspelling translation using just your webcam. No downloads, no hardware, no signup." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#06060c" />
+  </head>
+  <body>
+    <!-- Animated background orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <!-- ========================================
+         LANDING SCREEN
+         Shown before camera is enabled
+         ======================================== -->
+    <div id="landing" class="landing">
+      <div class="landing-content">
+        <div class="landing-badge">
+          <span class="pulse-dot"></span>
+          Powered by MediaPipe AI
+        </div>
+        <h1 class="landing-title">Sign<span class="accent">Bridge</span></h1>
+        <p class="landing-subtitle">Real-time ASL to English translation</p>
+        <p class="landing-desc">
+          Bridging communication between the Deaf and hearing communities.
+          No downloads, no hardware, no signup — just your webcam.
+        </p>
+
+        <div class="landing-features">
+          <span class="feature-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            Webcam only
+          </span>
+          <span class="feature-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            100% private
+          </span>
+          <span class="feature-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Real-time
+          </span>
+          <span class="feature-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            Voice output
+          </span>
+        </div>
+
+        <button id="start-btn" class="start-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 7l-7 5 7 5V7z"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          Enable Camera to Start
+        </button>
+
+        <p class="landing-note">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Your camera feed never leaves your device. All processing happens locally in your browser.
+        </p>
+      </div>
+    </div>
+
+    <!-- ========================================
+         MAIN APP
+         Hidden until camera is enabled
+         ======================================== -->
+    <div id="app" class="app hidden">
+      <!-- Header -->
+      <header class="header">
+        <h1 class="logo">Sign<span class="accent">Bridge</span></h1>
+        <div class="header-controls">
+          <button id="speak-btn" class="icon-btn" title="Speak transcript aloud">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </button>
+          <button id="clear-btn" class="icon-btn" title="Clear transcript">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main content: camera + transcript -->
+      <main class="main-layout">
+        <!-- Left: Camera feed with overlay -->
+        <div class="camera-section">
+          <div class="camera-container" id="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="overlay"></canvas>
+            <div id="current-letter" class="current-letter"></div>
+            <div id="confidence" class="confidence-bar">
+              <div id="confidence-fill" class="confidence-fill"></div>
+            </div>
+          </div>
+          <div id="status" class="status">Initializing hand tracking...</div>
+        </div>
+
+        <!-- Right: Transcript panel -->
+        <div class="transcript-section">
+          <div class="transcript-header">
+            <h2>Transcript</h2>
+            <span id="letter-count" class="letter-count">0 letters</span>
+          </div>
+          <div id="transcript" class="transcript">
+            <span class="placeholder">Start signing to see translation here...</span>
+          </div>
+          <div id="current-word" class="current-word"></div>
+        </div>
+      </main>
+
+      <!-- Bottom: ASL Reference Strip -->
+      <div class="reference-strip">
+        <div id="asl-strip" class="asl-strip"></div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>
+          Built with
+          <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker" target="_blank" rel="noopener">
+            Google MediaPipe
+          </a>
+          &middot; HackUSF 2026 &middot; No data leaves your browser
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
