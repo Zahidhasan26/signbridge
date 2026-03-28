@@ -320,71 +320,41 @@ export function classifyASL(landmarks, handedness = 'Right') {
     const ringPip = landmarks[14];
     const palmSize = distance2D(landmarks[0], landmarks[9]);
 
-    // --- E: All fingertips curled tightly toward palm, thumb tucked across/below them ---
-    // E has fingertips touching or very close to the palm, thumb tip below fingers
-    const indexCurl = fingerAngle(landmarks, FINGER.INDEX);
-    const middleCurl = fingerAngle(landmarks, FINGER.MIDDLE);
-    const ringCurl = fingerAngle(landmarks, FINGER.RING);
-    const pinkyCurl = fingerAngle(landmarks, FINGER.PINKY);
-    
-    const allTightlyCurled = indexCurl < 80 && middleCurl < 80 && ringCurl < 80 && pinkyCurl < 80;
-    
-    // E: fingertips are close to thumb tip (tips curled down to meet thumb)
+    // --- E: All fingertips curled tightly, tips near thumb ---
     const avgTipToThumb = (
       distance(thumbTip, indexTip) +
       distance(thumbTip, middleTip) +
       distance(thumbTip, ringTip)
     ) / 3;
-    
-    if (allTightlyCurled && avgTipToThumb < palmSize * 0.35) {
+
+    if (avgTipToThumb < palmSize * 0.3) {
       return { letter: 'E', confidence: 0.6 };
     }
 
-    // --- T: Thumb pokes UP between index and middle finger ---
-    // Thumb tip is between index PIP and middle PIP, and thumb tip is ABOVE (lower y) the index tip
+    // --- T: Thumb pokes up between index and middle ---
     const thumbToIndexPip = distance(thumbTip, indexPip);
     const thumbToMiddlePip = distance(thumbTip, middlePip);
-    const thumbBetween = thumbToIndexPip < palmSize * 0.3 && thumbToMiddlePip < palmSize * 0.35;
-    // For T, the thumb tip should be higher (lower y) than the curled index fingertip
+    const thumbBetween = thumbToIndexPip < palmSize * 0.28 && thumbToMiddlePip < palmSize * 0.32;
     const thumbAboveIndexTip = thumbTip.y < indexTip.y;
-    
+
     if (thumbBetween && thumbAboveIndexTip) {
       return { letter: 'T', confidence: 0.55 };
     }
 
-    // --- M: Three fingers (index, middle, ring) draped over thumb ---
-    // All three fingertips are below (higher y) the thumb tip
-    const indexOver = indexTip.y > thumbTip.y;
-    const middleOver = middleTip.y > thumbTip.y;
-    const ringOver = ringTip.y > thumbTip.y;
-    
-    // M: thumb tip is tucked under and visible between ring and pinky
-    if (indexOver && middleOver && ringOver) {
-      return { letter: 'M', confidence: 0.5 };
+    // --- A: Thumb sticks out to the SIDE of the fist ---
+    // Thumb tip is far from the center of the fingers laterally
+    const fingersCenterX = (indexMcp.x + middleMcp.x) / 2;
+    const thumbOffsetX = Math.abs(thumbTip.x - fingersCenterX);
+    const isThumbToSide = thumbOffsetX > palmSize * 0.35;
+
+    if (isThumbToSide) {
+      return { letter: 'A', confidence: 0.6 };
     }
 
-    // --- N: Two fingers (index, middle) draped over thumb ---
-    if (indexOver && middleOver && !ringOver) {
-      return { letter: 'N', confidence: 0.5 };
-    }
-
-    // --- S: Fist with thumb wrapped ACROSS the front of fingers ---
-    // Thumb tip is near the index/middle PIP area but NOT poking between them
-    // Key difference from A: thumb is in front of fingers, not to the side
-    const thumbNearFront = (
-      distance(thumbTip, indexPip) < palmSize * 0.45 ||
-      distance(thumbTip, middlePip) < palmSize * 0.45
-    );
-    // Thumb tip should be roughly between index MCP and middle MCP horizontally
-    const thumbCenterX = (indexMcp.x + middleMcp.x) / 2;
-    const thumbNearCenter = Math.abs(thumbTip.x - thumbCenterX) < palmSize * 0.3;
-    
-    if (thumbNearFront && thumbNearCenter && !isThumbOut(landmarks)) {
-      return { letter: 'S', confidence: 0.6 };
-    }
-
-    // --- A: Fist with thumb to the SIDE (alongside the index finger) ---
-    return { letter: 'A', confidence: 0.55 };
+    // --- S: Default fist (thumb across front of fingers) ---
+    // This is the most common fist pose and the hardest to distinguish,
+    // so we make it the default fallback for closed hands
+    return { letter: 'S', confidence: 0.6 };
   }
 
   // ============================
