@@ -308,56 +308,82 @@ export function classifyASL(landmarks, handedness = 'Right') {
     // All fingers closed — could be A, S, T, M, N, E
 
     const thumbTip = landmarks[4];
-    const indexPip = landmarks[6];
-    const middlePip = landmarks[10];
+    const thumbIp = landmarks[3];
     const indexTip = landmarks[8];
     const middleTip = landmarks[12];
     const ringTip = landmarks[16];
+    const pinkyTip = landmarks[20];
+    const indexPip = landmarks[6];
+    const indexMcp = landmarks[5];
+    const middlePip = landmarks[10];
+    const middleMcp = landmarks[9];
+    const ringPip = landmarks[14];
     const palmSize = distance2D(landmarks[0], landmarks[9]);
 
-    // E — fingertips curled down, touching or near thumb
-    // All fingertips are close to the thumb tip
+    // --- E: All fingertips curled tightly toward palm, thumb tucked across/below them ---
+    // E has fingertips touching or very close to the palm, thumb tip below fingers
+    const indexCurl = fingerAngle(landmarks, FINGER.INDEX);
+    const middleCurl = fingerAngle(landmarks, FINGER.MIDDLE);
+    const ringCurl = fingerAngle(landmarks, FINGER.RING);
+    const pinkyCurl = fingerAngle(landmarks, FINGER.PINKY);
+    
+    const allTightlyCurled = indexCurl < 80 && middleCurl < 80 && ringCurl < 80 && pinkyCurl < 80;
+    
+    // E: fingertips are close to thumb tip (tips curled down to meet thumb)
     const avgTipToThumb = (
       distance(thumbTip, indexTip) +
       distance(thumbTip, middleTip) +
       distance(thumbTip, ringTip)
     ) / 3;
-
-    if (avgTipToThumb < palmSize * 0.4) {
-      return { letter: 'E', confidence: 0.55 };
+    
+    if (allTightlyCurled && avgTipToThumb < palmSize * 0.35) {
+      return { letter: 'E', confidence: 0.6 };
     }
 
-    // T — thumb pokes between index and middle finger
-    const thumbBetweenIM = (
-      distance(thumbTip, indexPip) < palmSize * 0.35 &&
-      distance(thumbTip, middlePip) < palmSize * 0.4
+    // --- T: Thumb pokes UP between index and middle finger ---
+    // Thumb tip is between index PIP and middle PIP, and thumb tip is ABOVE (lower y) the index tip
+    const thumbToIndexPip = distance(thumbTip, indexPip);
+    const thumbToMiddlePip = distance(thumbTip, middlePip);
+    const thumbBetween = thumbToIndexPip < palmSize * 0.3 && thumbToMiddlePip < palmSize * 0.35;
+    // For T, the thumb tip should be higher (lower y) than the curled index fingertip
+    const thumbAboveIndexTip = thumbTip.y < indexTip.y;
+    
+    if (thumbBetween && thumbAboveIndexTip) {
+      return { letter: 'T', confidence: 0.55 };
+    }
+
+    // --- M: Three fingers (index, middle, ring) draped over thumb ---
+    // All three fingertips are below (higher y) the thumb tip
+    const indexOver = indexTip.y > thumbTip.y;
+    const middleOver = middleTip.y > thumbTip.y;
+    const ringOver = ringTip.y > thumbTip.y;
+    
+    // M: thumb tip is tucked under and visible between ring and pinky
+    if (indexOver && middleOver && ringOver) {
+      return { letter: 'M', confidence: 0.5 };
+    }
+
+    // --- N: Two fingers (index, middle) draped over thumb ---
+    if (indexOver && middleOver && !ringOver) {
+      return { letter: 'N', confidence: 0.5 };
+    }
+
+    // --- S: Fist with thumb wrapped ACROSS the front of fingers ---
+    // Thumb tip is near the index/middle PIP area but NOT poking between them
+    // Key difference from A: thumb is in front of fingers, not to the side
+    const thumbNearFront = (
+      distance(thumbTip, indexPip) < palmSize * 0.45 ||
+      distance(thumbTip, middlePip) < palmSize * 0.45
     );
-    if (thumbBetweenIM) {
-      return { letter: 'T', confidence: 0.5 };
+    // Thumb tip should be roughly between index MCP and middle MCP horizontally
+    const thumbCenterX = (indexMcp.x + middleMcp.x) / 2;
+    const thumbNearCenter = Math.abs(thumbTip.x - thumbCenterX) < palmSize * 0.3;
+    
+    if (thumbNearFront && thumbNearCenter && !isThumbOut(landmarks)) {
+      return { letter: 'S', confidence: 0.6 };
     }
 
-    // M — three fingers (index, middle, ring) over thumb
-    // Check if index, middle, and ring tips are below thumb tip (in front of fist)
-    const indexOverThumb = indexTip.y > thumbTip.y;
-    const middleOverThumb = middleTip.y > thumbTip.y;
-    const ringOverThumb = ringTip.y > thumbTip.y;
-
-    if (indexOverThumb && middleOverThumb && ringOverThumb) {
-      return { letter: 'M', confidence: 0.45 };
-    }
-
-    // N — two fingers (index, middle) over thumb
-    if (indexOverThumb && middleOverThumb && !ringOverThumb) {
-      return { letter: 'N', confidence: 0.45 };
-    }
-
-    // S — fist with thumb over fingers (thumb in front of curled fingers)
-    const thumbInFront = thumbTip.z < indexPip.z; // thumb closer to camera
-    if (thumbInFront && !isThumbOut(landmarks)) {
-      return { letter: 'S', confidence: 0.5 };
-    }
-
-    // A — fist with thumb alongside (default fist)
+    // --- A: Fist with thumb to the SIDE (alongside the index finger) ---
     return { letter: 'A', confidence: 0.55 };
   }
 
