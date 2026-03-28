@@ -167,26 +167,26 @@ export function classifyASL(landmarks, handedness = 'Right') {
   const sideways = isHandSideways(landmarks);
   const pointingDown = isHandPointingDown(landmarks);
 
-  // ============================
-  // 5 FINGERS EXTENDED
+    // ============================
+  // 5 FINGERS EXTENDED (including thumb)
   // ============================
 
-  if (f.count === 5 && f.thumb && f.index && f.middle && f.ring && f.pinky) {
-    // Open hand = SPACE gesture
-    return { letter: ' ', confidence: 0.7 };
+  // B — all fingers up, open hand (space is now no-hand gesture)
+  if (f.thumb && f.index && f.middle && f.ring && f.pinky && !sideways) {
+    return { letter: 'B', confidence: 0.8 };
   }
 
   // ============================
   // 4 FINGERS EXTENDED
   // ============================
 
-  // B — 4 fingers up, thumb tucked across palm
+  // B — also matches 4 fingers up with thumb tucked (classic ASL B)
   if (!f.thumb && f.index && f.middle && f.ring && f.pinky && !sideways) {
     if (isThumbTucked(landmarks)) {
       return { letter: 'B', confidence: 0.85 };
     }
   }
-
+  
   // ============================
   // 3 FINGERS EXTENDED
   // ============================

@@ -19,6 +19,7 @@ let noHandFrames = 0;
 const BUFFER_SIZE = 12;    // Number of frames to average over
 const HOLD_THRESHOLD = 18; // Frames of same letter needed to confirm
 const NO_HAND_TIMEOUT = 30; // Frames without hand before resetting indicators
+const NO_HAND_SPACE_FRAMES = 45; // Frames without hand before auto-inserting a space
 
 /**
  * Initialize with DOM element references
@@ -51,6 +52,10 @@ export function processFrame(result) {
       els.currentLetter?.classList.remove('active');
       updateConfidence(0);
       highlightRefLetter(null);
+    }
+    // Insert a space after a sustained no-hand gap when building a word.
+    if (noHandFrames === NO_HAND_SPACE_FRAMES && currentWord.length > 0) {
+      confirmLetter(' ');
     }
     return;
   }
