@@ -98,6 +98,31 @@ export function processFrame(result) {
 
   // Update shared visual indicators
   updateConfidence(confidence);
+
+  // hand motion detected but no clear letter
+
+  if (letter === '[SWIPE]') {
+    // Show a visual indicator
+    els.currentLetter.textContent = '💨'; 
+    els.currentLetter.classList.add('active');
+    
+    // Clear the current word entirely based on the tab
+    if (currentTab === 'translation') {
+      currentWord = '';
+      els.currentWord.textContent = '';
+      renderTranscript();
+    } else {
+      buddyCurrentWord = '';
+      els.buddyCurrentWord.textContent = '';
+      renderBuddyCompose();
+    }
+    
+    // Reset the normal letter buffers so it doesn't get confused
+    letterBuffer = [];
+    holdCount = 0;
+    return; // Exit the function immediately! Don't run the hold timers.
+  }
+
   if (letter && letter !== ' ') {
     highlightRefLetter(letter);
     els.currentLetter.textContent = letter;

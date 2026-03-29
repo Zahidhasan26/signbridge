@@ -12,8 +12,8 @@ import { distance, distance2D, angleBetween, FINGER, WRIST } from './utils.js';
 
 
 // wrist motion history for dynamic gestures
-// let wristXHistory = [];
-// const HISTORY_LENGTH = 10; 
+let wristXHistory = [];
+const HISTORY_LENGTH = 15; 
 
 // ============================================
 // FINGER STATE HELPERS
@@ -156,7 +156,6 @@ function getStates(landmarks) {
   return { thumb, index, middle, ring, pinky, count };
 }
 
-
 // ============================================
 // MAIN CLASSIFICATION
 // ============================================
@@ -172,7 +171,27 @@ export function classifyASL(landmarks, handedness = 'Right') {
   const sideways = isHandSideways(landmarks);
   const pointingDown = isHandPointingDown(landmarks);
 
-    // ============================
+  // 1. TRACK WRIST MOTION
+  wristXHistory.push(landmarks[0].x);
+  if (wristXHistory.length > HISTORY_LENGTH) {
+    wristXHistory.shift();
+  }
+
+ // 2. DETECT DYNAMIC SWIPE (Fast horizontal movement)
+  // Condition: 4+ fingers open (open hand) and we have enough history
+  if (f.count >= 4 && wristXHistory.length === HISTORY_LENGTH) {
+    const oldestX = wristXHistory[0];
+    const newestX = wristXHistory[wristXHistory.length - 1];
+    
+    // Math.abs() means a swipe in EITHER direction (left or right) will work.
+    // We lowered the threshold to 0.08 (8% of screen) so it requires less effort.
+    if (Math.abs(oldestX - newestX) > 0.25) { 
+      wristXHistory = []; // Clear history so we don't double-trigger
+      return { letter: '[SWIPE]', confidence: 0.95 };
+    }
+  }
+
+  // ============================
   // 5 FINGERS EXTENDED (including thumb)
   // ============================
 
@@ -265,6 +284,11 @@ export function classifyASL(landmarks, handedness = 'Right') {
   // ============================
   // 1 FINGER EXTENDED
   // ============================
+
+  // ⌫ (BACKSPACE) — Thumbs down (only thumb extended, hand pointing down)
+  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky && pointingDown) {
+    return { letter: '⌫', confidence: 0.85 };
+  }
 
   // D — index only, pointing up
   if (f.index && !f.middle && !f.ring && !f.pinky && !f.thumb && !sideways) {
@@ -397,12 +421,6 @@ export function classifyASL(landmarks, handedness = 'Right') {
       return { letter: 'O', confidence: 0.65 };
     }
   }
-
-  // ============================
-  // DYNAMIC LETTERS (simplified)
-  // J = I with a downward motion → just map to I for static detection
-  // Z = index draws Z → just map to D/index for static detection
-  // ============================
 
   return null; // Unrecognized
 }
