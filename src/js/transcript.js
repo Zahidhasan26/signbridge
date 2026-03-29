@@ -103,7 +103,7 @@ export function processFrame(result) {
 
   if (letter === '[SWIPE]') {
     // Show a visual indicator
-    els.currentLetter.textContent = '💨'; 
+    els.currentLetter.innerHTML = '<span style="color: var(--danger, #ff4466); font-family: sans-serif;">✕</span>';
     els.currentLetter.classList.add('active');
     
     // Clear the current word entirely based on the tab
@@ -190,13 +190,27 @@ function getBufferMode() {
 function confirmLetterTranslation(letter) {
   lastConfirmedLetter = letter;
 
-  if (letter === ' ') {
+  if (letter === '⌫') {
+    // BACKSPACE LOGIC
+    if (currentWord.length > 0) {
+      currentWord = currentWord.slice(0, -1);
+    } else if (fullText.length > 0) {
+      // If we backspace past a space, pull the previous word back into currentWord
+      if (fullText.endsWith(' ')) fullText = fullText.slice(0, -1);
+      const words = fullText.split(' ');
+      currentWord = words.pop() || '';
+      fullText = words.length > 0 ? words.join(' ') + ' ' : '';
+      currentWord = currentWord.slice(0, -1); // Delete the last char of that restored word
+    }
+  } else if (letter === ' ') {
+    // SPACE LOGIC
     if (currentWord.length > 0) {
       fullText += currentWord + ' ';
       speakWord(currentWord);
       currentWord = '';
     }
   } else {
+    // NORMAL LETTER LOGIC
     currentWord += letter;
   }
 
