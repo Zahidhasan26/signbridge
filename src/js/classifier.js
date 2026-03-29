@@ -265,19 +265,17 @@ export function classifyASL(landmarks, handedness = 'Right') {
   // ============================
 
   // 'O' Shape 
-  // Thumb touching both index and middle tips, hand generally closed
+  // Thumb touching index and middle, BUT ring finger is slightly further away (prevents 'E' overlap)
   if (f.count <= 1) {
     const thumbTip = landmarks[4];
     const indexTipDist = distance(thumbTip, landmarks[8]);
     const middleTipDist = distance(thumbTip, landmarks[12]);
+    const ringTipDist = distance(thumbTip, landmarks[16]); // Check the ring finger!
     
-    // Loosened the distance requirement so it triggers easily
-    if (indexTipDist < palmSize * 0.4 && middleTipDist < palmSize * 0.4) {
+    if (indexTipDist < palmSize * 0.4 && middleTipDist < palmSize * 0.4 && ringTipDist > palmSize * 0.25) {
       return { letter: 'O', confidence: 0.85 };
     }
   }
-
-  // 'X' Shape (The Hook)
   // Index is explicitly hooked. Middle is closed.
 
   // ============================
