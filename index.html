@@ -115,9 +115,18 @@
         <!-- Right: Tabbed panel -->
         <div class="right-panel">
           <!-- Tabs -->
-          <div class="panel-tabs">
-            <button class="panel-tab active" data-tab="translation">Translation</button>
+          <div class="panel-tabs" style="display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+            
+            <button class="panel-tab active" data-tab="translation">Live Translator</button>
             <button class="panel-tab" data-tab="buddy">AI Buddy</button>
+            
+            <div style="flex-grow: 1;"></div>
+            
+            <div style="display: flex; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 20px; padding: 3px;">
+              <button id="mode-letters" style="padding: 4px 12px; border-radius: 18px; border: none; background: var(--accent); color: #000; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">A-Z</button>
+              <button id="mode-words" style="padding: 4px 12px; border-radius: 18px; border: none; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">Words</button>
+            </div>
+            
           </div>
 
           <!-- Tab Content: Translation -->

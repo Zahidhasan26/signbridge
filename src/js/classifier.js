@@ -170,6 +170,12 @@ export function classifyASL(landmarks, handedness = 'Right') {
   const f = getStates(landmarks);
   const sideways = isHandSideways(landmarks);
   const pointingDown = isHandPointingDown(landmarks);
+  // Calculate palm size for proportional distance measurements
+  const palmSize = distance2D(landmarks[0], landmarks[9]);
+
+ // ============================
+  // DYNAMIC GESTURES & VELOCITY
+  // ============================
 
   // 1. TRACK WRIST MOTION
   wristXHistory.push(landmarks[0].x);
@@ -177,27 +183,81 @@ export function classifyASL(landmarks, handedness = 'Right') {
     wristXHistory.shift();
   }
 
- // 2. DETECT DYNAMIC SWIPE (Fast horizontal movement)
-  // Condition: 4+ fingers open (open hand) and we have enough history
-  if (f.count >= 4 && wristXHistory.length === HISTORY_LENGTH) {
+  // Calculate if the hand is actively moving (prevents mid-swipe false positives)
+  let isMoving = false;
+  if (wristXHistory.length === HISTORY_LENGTH) {
     const oldestX = wristXHistory[0];
     const newestX = wristXHistory[wristXHistory.length - 1];
     
-    // Math.abs() means a swipe in EITHER direction (left or right) will work.
-    // We lowered the threshold to 0.08 (8% of screen) so it requires less effort.
-    if (Math.abs(oldestX - newestX) > 0.25) { 
-      wristXHistory = []; // Clear history so we don't double-trigger
+    // 2. DETECT DYNAMIC SWIPE
+    if (f.count >= 4 && Math.abs(oldestX - newestX) > 0.25) { 
+      wristXHistory = []; 
       return { letter: '[SWIPE]', confidence: 0.95 };
     }
+
+    // If it moved more than 3% of the screen, consider it "in motion"
+    isMoving = Math.abs(oldestX - newestX) > 0.03; 
   }
 
   // ============================
-  // 5 FINGERS EXTENDED (including thumb)
+  // FULL ASL WORDS (Requires hand to be still!)
   // ============================
 
-  // B — all fingers up, open hand (space is now no-hand gesture)
-  if (f.thumb && f.index && f.middle && f.ring && f.pinky && !sideways) {
-    return { letter: 'B', confidence: 0.8 };
+  // "[Hello]" (The Salute)
+  // MUST NOT BE MOVING to prevent triggering during a swipe
+  if (f.count >= 4 && !pointingDown && !isMoving) { 
+    const wrist = landmarks[0];
+    const middleMcp = landmarks[9]; 
+    const dx = Math.abs(middleMcp.x - wrist.x);
+    const dy = Math.abs(middleMcp.y - wrist.y);
+    // Tightened the diagonal angle slightly to be more accurate
+    if (dx > dy * 0.6 && dx < dy * 1.3) {
+      return { letter: '[Hello]', confidence: 0.85 };
+    }
+  }
+
+  // "[I Love You]" (ILY)
+  if (f.thumb && f.index && !f.middle && !f.ring && f.pinky && !sideways && !pointingDown && !isMoving) {
+    return { letter: '[I Love You]', confidence: 0.95 };
+  }
+
+  // "[Good]" (Thumbs Up)
+  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky && !pointingDown && !isMoving) {
+    const thumbTip = landmarks[4];
+    const indexMcp = landmarks[5];
+    if (thumbTip.y < indexMcp.y) { 
+      return { letter: '[Good]', confidence: 0.90 };
+    }
+  }
+
+  // "[A Little]" 
+  if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky && !isMoving) {
+    const thumbTip = landmarks[4];
+    const indexTip = landmarks[8];
+    const dist = distance(thumbTip, indexTip);
+    if (dist < palmSize * 0.4 && dist > palmSize * 0.15) {
+      return { letter: '[A Little]', confidence: 0.85 };
+    }
+  }
+
+  // "[Heart]" (Mini Finger-Heart)
+  if (!f.middle && !f.ring && !f.pinky && !isMoving) {
+    const thumbTip = landmarks[4];
+    const indexTip = landmarks[8];
+    const wrist = landmarks[0];
+    if (distance(thumbTip, indexTip) < palmSize * 0.15 && distance(wrist, indexTip) > palmSize * 1.2) {
+      return { letter: '[Heart]', confidence: 0.95 };
+    }
+  }
+
+  // "[No]" 
+  if (!f.ring && !f.pinky && f.count <= 1 && !isMoving) { 
+    const thumbTip = landmarks[4];
+    const indexTip = landmarks[8];
+    const middleTip = landmarks[12];
+    if (distance(thumbTip, indexTip) < palmSize * 0.25 && distance(thumbTip, middleTip) < palmSize * 0.25) {
+      return { letter: '[No]', confidence: 0.90 };
+    }
   }
 
   // ============================

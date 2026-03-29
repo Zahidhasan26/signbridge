@@ -17,6 +17,8 @@ let letterBuffer = [];
 let holdingLetter = '';
 let holdCount = 0;
 let noHandFrames = 0;
+let lastInstantWord = ''; // Anti-spam lock for full words
+let detectionMode = 'letters'; // 'letters' or 'words'
 
 // ============================================
 // TRANSLATION TAB STATE
@@ -44,6 +46,30 @@ const NO_HAND_SPACE_FRAMES = 45;
 export function initTranscript(elements) {
   els = elements;
   buildReferenceStrip();
+
+  // Wire up the new Mode Toggle Switch
+  const btnLetters = document.getElementById('mode-letters');
+  const btnWords = document.getElementById('mode-words');
+
+  // Switch to Letters Mode
+  btnLetters?.addEventListener('click', () => {
+    detectionMode = 'letters';
+    btnLetters.style.background = 'var(--accent)';
+    btnLetters.style.color = '#000';
+    btnWords.style.background = 'transparent';
+    btnWords.style.color = 'var(--text-muted)';
+    letterBuffer = []; holdCount = 0; // Reset buffers
+  });
+
+  // Switch to Words Mode
+  btnWords?.addEventListener('click', () => {
+    detectionMode = 'words';
+    btnWords.style.background = 'var(--accent)';
+    btnWords.style.color = '#000';
+    btnLetters.style.background = 'transparent';
+    btnLetters.style.color = 'var(--text-muted)';
+    letterBuffer = []; holdCount = 0;
+  });
 }
 
 /**
@@ -77,6 +103,8 @@ export function processFrame(result) {
   // No hand detected
   if (!result) {
     noHandFrames++;
+    if (noHandFrames > 10) lastInstantWord = ''; // Clear anti-spam lock
+
     if (noHandFrames > NO_HAND_TIMEOUT) {
       els.currentLetter?.classList.remove('active');
       updateConfidence(0);
@@ -94,19 +122,17 @@ export function processFrame(result) {
   }
 
   noHandFrames = 0;
-  const { letter, confidence } = result;
+  const { confidence } = result;
+  let { letter } = result; // Make letter mutable using 'let'
 
   // Update shared visual indicators
   updateConfidence(confidence);
 
-  // hand motion detected but no clear letter
-
+  // ---> 1. ALWAYS ALLOW SWIPE (Works in both modes) <---
   if (letter === '[SWIPE]') {
-    // Show a visual indicator
     els.currentLetter.innerHTML = '<span style="color: var(--danger, #ff4466); font-family: sans-serif;">✕</span>';
     els.currentLetter.classList.add('active');
     
-    // Clear the current word entirely based on the tab
     if (currentTab === 'translation') {
       currentWord = '';
       els.currentWord.textContent = '';
@@ -115,14 +141,54 @@ export function processFrame(result) {
       buddyCurrentWord = '';
       els.buddyCurrentWord.textContent = '';
       renderBuddyCompose();
+      const hasText = (buddyFullText + buddyCurrentWord).trim().length > 0;
+      els.sendBuddyBtn.disabled = !hasText;
     }
-    
-    // Reset the normal letter buffers so it doesn't get confused
-    letterBuffer = [];
-    holdCount = 0;
-    return; // Exit the function immediately! Don't run the hold timers.
+    letterBuffer = []; holdCount = 0;
+    return; 
   }
 
+  // ---> 2. THE MODE FILTER <---
+  const isWord = letter && letter.startsWith('[');
+  
+  if (detectionMode === 'letters' && isWord) {
+    letter = null; // Erase full words if we are spelling
+  } else if (detectionMode === 'words' && !isWord && letter !== ' ') {
+    letter = null; // Erase single letters if we are looking for words
+  }
+
+  // If the letter was erased by the filter, drop the frame entirely
+  if (!letter) return;
+
+
+  // ---> 3. FULL WORD INTERCEPTOR <---
+  if (isWord) {
+    if (letter === lastInstantWord) return; // Anti-spam lock
+    
+    const cleanWord = letter.replace('[', '').replace(']', '');
+    
+    els.currentLetter.textContent = cleanWord; 
+    els.currentLetter.classList.add('active');
+    
+    if (currentTab === 'translation') {
+      fullText += cleanWord + ' ';
+      renderTranscript();
+    } else {
+      buddyFullText += cleanWord + ' ';
+      renderBuddyCompose();
+      els.sendBuddyBtn.disabled = false;
+    }
+    
+    elevenLabsSpeak(cleanWord);
+    lastInstantWord = letter;
+    letterBuffer = []; holdCount = 0;
+    return; 
+  }
+
+  // If they switched to spelling a normal letter, clear the word lock
+  lastInstantWord = '';
+
+  // ---> 4. NORMAL LETTER PROCESSING <---
   if (letter && letter !== ' ') {
     highlightRefLetter(letter);
     els.currentLetter.textContent = letter;
@@ -195,12 +261,11 @@ function confirmLetterTranslation(letter) {
     if (currentWord.length > 0) {
       currentWord = currentWord.slice(0, -1);
     } else if (fullText.length > 0) {
-      // If we backspace past a space, pull the previous word back into currentWord
       if (fullText.endsWith(' ')) fullText = fullText.slice(0, -1);
       const words = fullText.split(' ');
       currentWord = words.pop() || '';
       fullText = words.length > 0 ? words.join(' ') + ' ' : '';
-      currentWord = currentWord.slice(0, -1); // Delete the last char of that restored word
+      currentWord = currentWord.slice(0, -1); 
     }
   } else if (letter === ' ') {
     // SPACE LOGIC
@@ -243,7 +308,7 @@ function renderTranscript() {
 // ============================================
 
 function confirmLetterBuddy(letter) {
-  if (isBuddyThinking) return; // don't accept input while waiting
+  if (isBuddyThinking) return; 
 
   if (letter === '⌫') {
     // BACKSPACE LOGIC
@@ -315,7 +380,7 @@ export async function handleSendToBuddy() {
   els.buddyCurrentWord.textContent = '';
   els.buddyCharCount.textContent = '0 chars';
 
- // Show thinking indicator
+  // Show thinking indicator
   const thinkingEl = document.createElement('div');
   thinkingEl.className = 'ai-thinking-dots';
   thinkingEl.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
