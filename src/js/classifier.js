@@ -259,6 +259,26 @@ export function classifyASL(landmarks, handedness = 'Right') {
       return { letter: '[No]', confidence: 0.90 };
     }
   }
+  // ============================
+  // VIP PRIORITY LETTERS ('O' and 'X')
+  // Intercept these before U, R, or fists can steal them!
+  // ============================
+
+  // 'O' Shape 
+  // Thumb touching both index and middle tips, hand generally closed
+  if (f.count <= 1) {
+    const thumbTip = landmarks[4];
+    const indexTipDist = distance(thumbTip, landmarks[8]);
+    const middleTipDist = distance(thumbTip, landmarks[12]);
+    
+    // Loosened the distance requirement so it triggers easily
+    if (indexTipDist < palmSize * 0.4 && middleTipDist < palmSize * 0.4) {
+      return { letter: 'O', confidence: 0.85 };
+    }
+  }
+
+  // 'X' Shape (The Hook)
+  // Index is explicitly hooked. Middle is closed.
 
   // ============================
   // 4 FINGERS EXTENDED
