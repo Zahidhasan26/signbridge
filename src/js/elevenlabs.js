@@ -5,7 +5,7 @@
  */
 
 const API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
-const MODEL_ID = 'eleven_monolingual_v1';
+const MODEL_ID = 'eleven_turbo_v2_5';
 
 const VOICES = {
   male: 'wWWn96OtTHu1sn8SRGEr',
@@ -56,7 +56,7 @@ export async function speakWord(word) {
           text: word,
           model_id: MODEL_ID,
           voice_settings: {
-            stability: 0.5,
+            stability: 0.35,
             similarity_boost: 0.75,
           },
         }),
