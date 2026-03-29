@@ -2,7 +2,7 @@
  * SignBridge — Main App Orchestrator
  * Wires together handTracker, classifier, and transcript
  */
-
+import { toggleVoice, getCurrentVoice } from './elevenlabs.js';
 import { initHandTracker, startCamera } from './handTracker.js';
 import { classifyASL } from './classifier.js';
 import {
@@ -105,3 +105,26 @@ export function initApp() {
     }
   }
 }
+// Voice toggle button
+  const voiceToggleBtn = document.getElementById('voice-toggle-btn');
+  voiceToggleBtn?.addEventListener('click', () => {
+    const newVoice = toggleVoice();
+    const label = newVoice === 'female' ? 'Female' : 'Male';
+    voiceToggleBtn.title = `Switch voice: ${label}`;
+    // Swap icon to indicate gender
+    if (newVoice === 'male') {
+      voiceToggleBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+          <line x1="15" y1="3" x2="21" y2="3"/>
+          <line x1="18" y1="0" x2="18" y2="6"/>
+        </svg>`;
+    } else {
+      voiceToggleBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>`;
+    }
+  });

@@ -1,18 +1,39 @@
 /**
  * SignBridge — ElevenLabs TTS Integration
  * Natural voice output with Web Speech API fallback
+ * Supports male/female voice switching
  */
 
 const API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
-const VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel — clear, natural female voice
 const MODEL_ID = 'eleven_monolingual_v1';
 
+const VOICES = {
+  male: 'wWWn96OtTHu1sn8SRGEr',
+  female: 'DODLEQrClDo8wCz460ld',
+};
+
+let currentVoice = 'female'; // default
 let audioQueue = [];
 let isPlaying = false;
 
 /**
+ * Toggle between male and female voice
+ * Returns the new voice name
+ */
+export function toggleVoice() {
+  currentVoice = currentVoice === 'female' ? 'male' : 'female';
+  return currentVoice;
+}
+
+/**
+ * Get current voice name
+ */
+export function getCurrentVoice() {
+  return currentVoice;
+}
+
+/**
  * Speak a word using ElevenLabs API
- * Falls back to Web Speech API if ElevenLabs fails or no API key
  */
 export async function speakWord(word) {
   if (!word) return;
@@ -24,7 +45,7 @@ export async function speakWord(word) {
 
   try {
     const res = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${VOICES[currentVoice]}`,
       {
         method: 'POST',
         headers: {
@@ -86,7 +107,7 @@ export async function speakFull(text) {
 
   try {
     const res = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${VOICES[currentVoice]}`,
       {
         method: 'POST',
         headers: {
@@ -129,9 +150,6 @@ function playNext() {
   });
 }
 
-/**
- * Web Speech API fallback
- */
 function fallbackSpeak(text) {
   if (!window.speechSynthesis) return;
   const utt = new SpeechSynthesisUtterance(text);
