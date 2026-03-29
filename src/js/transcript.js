@@ -245,25 +245,36 @@ function renderTranscript() {
 function confirmLetterBuddy(letter) {
   if (isBuddyThinking) return; // don't accept input while waiting
 
-  if (letter === ' ') {
+  if (letter === '⌫') {
+    // BACKSPACE LOGIC
+    if (buddyCurrentWord.length > 0) {
+      buddyCurrentWord = buddyCurrentWord.slice(0, -1);
+    } else if (buddyFullText.length > 0) {
+      if (buddyFullText.endsWith(' ')) buddyFullText = buddyFullText.slice(0, -1);
+      const words = buddyFullText.split(' ');
+      buddyCurrentWord = words.pop() || '';
+      buddyFullText = words.length > 0 ? words.join(' ') + ' ' : '';
+      buddyCurrentWord = buddyCurrentWord.slice(0, -1);
+    }
+  } else if (letter === ' ') {
+    // SPACE LOGIC
     if (buddyCurrentWord.length > 0) {
       buddyFullText += buddyCurrentWord + ' ';
       buddyCurrentWord = '';
     }
   } else {
+    // NORMAL LETTER LOGIC
     buddyCurrentWord += letter;
   }
 
   renderBuddyCompose();
   els.buddyCurrentWord.textContent = buddyCurrentWord;
-
   const totalChars = (buddyFullText + buddyCurrentWord).replace(/\s/g, '').length;
   els.buddyCharCount.textContent = `${totalChars} chars`;
 
   // Enable/disable send button
   const hasText = (buddyFullText + buddyCurrentWord).trim().length > 0;
   els.sendBuddyBtn.disabled = !hasText;
-
   letterBuffer = [];
 }
 
@@ -304,10 +315,10 @@ export async function handleSendToBuddy() {
   els.buddyCurrentWord.textContent = '';
   els.buddyCharCount.textContent = '0 chars';
 
-  // Show thinking indicator
+ // Show thinking indicator
   const thinkingEl = document.createElement('div');
-  thinkingEl.className = 'ai-thinking';
-  thinkingEl.textContent = 'Buddy is thinking…';
+  thinkingEl.className = 'ai-thinking-dots';
+  thinkingEl.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
   els.chatHistory.appendChild(thinkingEl);
   els.chatHistory.scrollTop = els.chatHistory.scrollHeight;
 
