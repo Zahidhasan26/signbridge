@@ -4,6 +4,8 @@
    HackUSF 2026
    ============================================ */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 /* Reset */
 *,
 *::before,
@@ -801,10 +803,6 @@ a:hover {
 }
 
 /* ============================================
-   Font loading (Inter from Google Fonts)
-   ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-/* ============================================
    Right Panel & Tabs
    ============================================ */
 .right-panel {
@@ -1092,4 +1090,31 @@ a:hover {
 .send-buddy-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Buddy type input */
+.buddy-type-row {
+  margin-top: 0.4rem;
+}
+
+.buddy-type-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.buddy-type-input::placeholder {
+  color: var(--text-muted);
+}
+
+.buddy-type-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
 }

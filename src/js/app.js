@@ -2,7 +2,6 @@
  * SignBridge — Main App Orchestrator
  * Wires together handTracker, classifier, transcript, AI buddy
  */
-
 import { toggleVoice, getCurrentVoice } from './elevenlabs.js';
 import { initHandTracker, startCamera } from './handTracker.js';
 import { classifyASL } from './classifier.js';
@@ -14,8 +13,8 @@ import {
   setActiveTab,
   handleSendToBuddy,
   clearChat,
+  handleBuddyTypedInput,
 } from './transcript.js';
-
 /**
  * Initialize the app — called from main.js
  */
@@ -141,4 +140,12 @@ export function initApp() {
       statusEl.classList.remove('active');
     }
   }
+  // Typed input for buddy
+  const buddyTypeInput = document.getElementById('buddy-type-input');
+  buddyTypeInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && buddyTypeInput.value.trim()) {
+      handleBuddyTypedInput(buddyTypeInput.value.trim());
+      buddyTypeInput.value = '';
+    }
+  });
 }

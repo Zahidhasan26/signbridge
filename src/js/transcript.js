@@ -363,6 +363,22 @@ function highlightRefLetter(letter) {
 }
 
 // ============================================
+// TYPED INPUT FOR BUDDY
+// ============================================
+
+export function handleBuddyTypedInput(text) {
+  if (!text.trim() || isBuddyThinking) return;
+
+  // Set the compose text to what was typed
+  buddyFullText = text;
+  buddyCurrentWord = '';
+  renderBuddyCompose();
+
+  // Then send it
+  handleSendToBuddy();
+}
+
+// ============================================
 // Text-to-Speech
 // ============================================
 
