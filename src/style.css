@@ -412,7 +412,7 @@ a:hover {
    Camera Section
    ============================================ */
 .camera-section {
-  flex: 1 1 560px;
+  flex: 1 1 250px;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
