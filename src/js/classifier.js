@@ -10,6 +10,11 @@
 
 import { distance, distance2D, angleBetween, FINGER, WRIST } from './utils.js';
 
+
+// wrist motion history for dynamic gestures
+// let wristXHistory = [];
+// const HISTORY_LENGTH = 10; 
+
 // ============================================
 // FINGER STATE HELPERS
 // ============================================
@@ -186,7 +191,7 @@ export function classifyASL(landmarks, handedness = 'Right') {
       return { letter: 'B', confidence: 0.85 };
     }
   }
-  
+
   // ============================
   // 3 FINGERS EXTENDED
   // ============================
