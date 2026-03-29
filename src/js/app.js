@@ -1,7 +1,8 @@
 /**
  * SignBridge — Main App Orchestrator
- * Wires together handTracker, classifier, and transcript
+ * Wires together handTracker, classifier, transcript, AI buddy
  */
+
 import { toggleVoice, getCurrentVoice } from './elevenlabs.js';
 import { initHandTracker, startCamera } from './handTracker.js';
 import { classifyASL } from './classifier.js';
@@ -10,13 +11,15 @@ import {
   processFrame,
   speakFullTranscript,
   clearTranscript,
+  setActiveTab,
+  handleSendToBuddy,
+  clearChat,
 } from './transcript.js';
 
 /**
  * Initialize the app — called from main.js
  */
 export function initApp() {
-  // Grab DOM references
   const landing = document.getElementById('landing');
   const app = document.getElementById('app');
   const startBtn = document.getElementById('start-btn');
@@ -32,86 +35,40 @@ export function initApp() {
     currentLetter: document.getElementById('current-letter'),
     confidenceFill: document.getElementById('confidence-fill'),
     aslStrip: document.getElementById('asl-strip'),
+    // Buddy elements
+    chatHistory: document.getElementById('chat-history'),
+    buddyCompose: document.getElementById('buddy-compose'),
+    buddyCurrentWord: document.getElementById('buddy-current-word'),
+    buddyCharCount: document.getElementById('buddy-char-count'),
+    sendBuddyBtn: document.getElementById('send-buddy-btn'),
   });
 
   // Wire up header buttons
   document.getElementById('speak-btn')?.addEventListener('click', speakFullTranscript);
   document.getElementById('clear-btn')?.addEventListener('click', clearTranscript);
 
-  // ============================================
-  // START BUTTON — the main entry point
-  // ============================================
-  startBtn.addEventListener('click', async () => {
-    startBtn.innerHTML = '<span class="spinner"></span> Loading AI model…';
-    startBtn.disabled = true;
-
-    try {
-      // Step 1: Load MediaPipe model
-      statusEl.textContent = 'Downloading hand tracking model…';
-      await initHandTracker(video, overlay, onHandResults);
-
-      // Step 2: Start webcam
-      statusEl.textContent = 'Starting camera…';
-      await startCamera();
-
-      // Step 3: Switch to app view
-      landing.classList.add('hidden');
-      app.classList.remove('hidden');
-
-      statusEl.textContent = 'Show your hand to start signing';
-      statusEl.classList.add('active');
-    } catch (err) {
-      console.error('Failed to start:', err);
-      statusEl.textContent = `Error: ${err.message}`;
-      statusEl.classList.add('error');
-      startBtn.textContent = 'Failed — check camera permissions and try again';
-      startBtn.disabled = false;
-    }
+  // Wire up tab buttons
+  document.querySelectorAll('.panel-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.panel-tab').forEach((t) => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+      tab.classList.add('active');
+      const tabName = tab.dataset.tab;
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      setActiveTab(tabName);
+    });
   });
 
-  // Camera container for glow effect
-  const cameraContainer = document.getElementById('camera-container');
+  // Wire up buddy buttons
+  document.getElementById('send-buddy-btn')?.addEventListener('click', handleSendToBuddy);
+  document.getElementById('clear-chat-btn')?.addEventListener('click', clearChat);
 
-  // ============================================
-  // Frame-by-frame callback from handTracker
-  // ============================================
-  function onHandResults(landmarks, handedness) {
-    if (landmarks) {
-      // Classify the hand pose
-      const result = classifyASL(landmarks, handedness);
-
-      // Send to transcript manager for smoothing + display
-      processFrame(result);
-
-      // Glow effect on camera when detecting
-      cameraContainer?.classList.add('detecting');
-
-      // Update status bar
-      if (result) {
-        const conf = Math.round(result.confidence * 100);
-        const display = result.letter === ' ' ? 'SPACE' : result.letter;
-        statusEl.textContent = `Detected: ${display} (${conf}%)`;
-      } else {
-        statusEl.textContent = 'Hand detected — analyzing gesture…';
-      }
-      statusEl.classList.add('active');
-      statusEl.classList.remove('error');
-    } else {
-      // No hand in frame
-      processFrame(null);
-      cameraContainer?.classList.remove('detecting');
-      statusEl.textContent = 'Show your hand to start signing';
-      statusEl.classList.remove('active');
-    }
-  }
-}
-// Voice toggle button
+  // Voice toggle button
   const voiceToggleBtn = document.getElementById('voice-toggle-btn');
   voiceToggleBtn?.addEventListener('click', () => {
     const newVoice = toggleVoice();
     const label = newVoice === 'female' ? 'Female' : 'Male';
     voiceToggleBtn.title = `Switch voice: ${label}`;
-    // Swap icon to indicate gender
     if (newVoice === 'male') {
       voiceToggleBtn.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -128,3 +85,60 @@ export function initApp() {
         </svg>`;
     }
   });
+
+  // ============================================
+  // START BUTTON
+  // ============================================
+  startBtn.addEventListener('click', async () => {
+    startBtn.innerHTML = '<span class="spinner"></span> Loading AI model…';
+    startBtn.disabled = true;
+
+    try {
+      statusEl.textContent = 'Downloading hand tracking model…';
+      await initHandTracker(video, overlay, onHandResults);
+
+      statusEl.textContent = 'Starting camera…';
+      await startCamera();
+
+      landing.classList.add('hidden');
+      app.classList.remove('hidden');
+
+      statusEl.textContent = 'Show your hand to start signing';
+      statusEl.classList.add('active');
+    } catch (err) {
+      console.error('Failed to start:', err);
+      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.classList.add('error');
+      startBtn.textContent = 'Failed — check camera permissions and try again';
+      startBtn.disabled = false;
+    }
+  });
+
+  const cameraContainer = document.getElementById('camera-container');
+
+  // ============================================
+  // Frame-by-frame callback
+  // ============================================
+  function onHandResults(landmarks, handedness) {
+    if (landmarks) {
+      const result = classifyASL(landmarks, handedness);
+      processFrame(result);
+      cameraContainer?.classList.add('detecting');
+
+      if (result) {
+        const conf = Math.round(result.confidence * 100);
+        const display = result.letter === ' ' ? 'SPACE' : result.letter;
+        statusEl.textContent = `Detected: ${display} (${conf}%)`;
+      } else {
+        statusEl.textContent = 'Hand detected — analyzing gesture…';
+      }
+      statusEl.classList.add('active');
+      statusEl.classList.remove('error');
+    } else {
+      processFrame(null);
+      cameraContainer?.classList.remove('detecting');
+      statusEl.textContent = 'Show your hand to start signing';
+      statusEl.classList.remove('active');
+    }
+  }
+}

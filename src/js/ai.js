@@ -4,7 +4,7 @@
  */
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const SYSTEM_PROMPT = `You are 'SignBridge Buddy', a warm, compassionate, and genuinely caring AI companion designed specifically for deaf and hard-of-hearing users who are communicating through a real-time ASL fingerspelling camera interface.
 
@@ -48,7 +48,10 @@ export async function askAIBuddy(userMessage) {
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': API_KEY,
+      },
       body: JSON.stringify({
         system_instruction: {
           parts: [{ text: SYSTEM_PROMPT }],

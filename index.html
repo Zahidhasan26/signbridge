@@ -18,7 +18,6 @@
 
     <!-- ========================================
          LANDING SCREEN
-         Shown before camera is enabled
          ======================================== -->
     <div id="landing" class="landing">
       <div class="landing-content">
@@ -69,7 +68,6 @@
 
     <!-- ========================================
          MAIN APP
-         Hidden until camera is enabled
          ======================================== -->
     <div id="app" class="app hidden">
       <!-- Header -->
@@ -77,11 +75,11 @@
         <h1 class="logo">Sign<span class="accent">Bridge</span></h1>
         <div class="header-controls">
           <button id="voice-toggle-btn" class="icon-btn" title="Switch voice: Female">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  </button>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
           <button id="speak-btn" class="icon-btn" title="Speak transcript aloud">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -98,9 +96,9 @@
         </div>
       </header>
 
-      <!-- Main content: camera + transcript -->
+      <!-- Main content -->
       <main class="main-layout">
-        <!-- Left: Camera feed with overlay -->
+        <!-- Left: Camera feed -->
         <div class="camera-section">
           <div class="camera-container" id="camera-container">
             <video id="video" autoplay playsinline></video>
@@ -113,16 +111,68 @@
           <div id="status" class="status">Initializing hand tracking...</div>
         </div>
 
-        <!-- Right: Transcript panel -->
-        <div class="transcript-section">
-          <div class="transcript-header">
-            <h2>Transcript</h2>
-            <span id="letter-count" class="letter-count">0 letters</span>
+        <!-- Right: Tabbed panel -->
+        <div class="right-panel">
+          <!-- Tabs -->
+          <div class="panel-tabs">
+            <button class="panel-tab active" data-tab="translation">Translation</button>
+            <button class="panel-tab" data-tab="buddy">AI Buddy</button>
           </div>
-          <div id="transcript" class="transcript">
-            <span class="placeholder">Start signing to see translation here...</span>
+
+          <!-- Tab Content: Translation -->
+          <div class="tab-content active" id="tab-translation">
+            <div class="transcript-section">
+              <div class="transcript-header">
+                <h2>Transcript</h2>
+                <span id="letter-count" class="letter-count">0 letters</span>
+              </div>
+              <div id="transcript" class="transcript">
+                <span class="placeholder">Start signing to see translation here...</span>
+              </div>
+              <div id="current-word" class="current-word"></div>
+            </div>
           </div>
-          <div id="current-word" class="current-word"></div>
+
+          <!-- Tab Content: AI Buddy -->
+          <div class="tab-content" id="tab-buddy">
+            <div class="buddy-section">
+              <div id="chat-history" class="chat-history">
+                <div class="chat-welcome">
+                  <div class="chat-welcome-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </div>
+                  <p>Hey there! I'm your SignBridge Buddy. Sign a message and hit send — I'd love to chat.</p>
+                </div>
+              </div>
+              <div class="buddy-compose-area">
+                <div class="buddy-compose-header">
+                  <span class="buddy-compose-label">Signing:</span>
+                  <span id="buddy-char-count" class="buddy-char-count">0 chars</span>
+                </div>
+                <div id="buddy-compose" class="buddy-compose">
+                  <span class="placeholder">Start signing to compose a message...</span>
+                </div>
+                <div id="buddy-current-word" class="current-word"></div>
+              </div>
+              <div class="buddy-actions">
+                <button id="send-buddy-btn" class="send-buddy-btn" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  Send to Buddy
+                </button>
+                <button id="clear-chat-btn" class="icon-btn" title="Clear chat">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
